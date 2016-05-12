@@ -1,0 +1,29 @@
+{
+  "name": "revive",
+  "version": "1.0.0",
+  "description": "revive",
+  "main": "index.js",
+  "scripts": {
+    "test": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexanderElias/revive.git"
+  },
+  "keywords": [
+    "revive",
+    "respawn",
+    "monitor",
+    "forever",
+    "pm2",
+    "alive",
+    "keep",
+    "alive"
+  ],
+  "author": "Alexander Steven Elias",
+  "license": "SEE LICENSE IN",
+  "bugs": {
+    "url": "https://github.com/AlexanderElias/revive/issues"
+  },
+  "homepage": "https://github.com/AlexanderElias/revive#readme"
+}
