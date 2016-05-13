@@ -55,9 +55,12 @@ monitor.on('exit', function (code, signal) {
 	console.log(signal + '\n');
 });
 
-monitor.start();
+// monitor.start();
+// monitor.stop();
+// monitor.restart();
 
-
-// setTimeout(function () {
-// 	monitor.restart();
-// }, 5000);
+setTimeout(function () {
+	// monitor.start();
+	// monitor.stop();
+	// monitor.restart();
+}, 5000);

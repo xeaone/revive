@@ -1,12 +1,10 @@
 'use strict';
 
-const Exec = require('child_process').exec;
 const Spawn = require('child_process').spawn;
 const SleepAsync = require('sleep-async')();
-const PsTree = require('ps-tree');
+const TreeKill = require('tree-kill');
 const Events = require('events');
 const Util = require('util');
-const Os = require('os');
 const Fs = require('fs');
 
 const CREATED = 'created';
@@ -19,9 +17,7 @@ const STOPPING = 'stopping';
 const SLEEPING = 'sleeping';
 const RESTARTING = 'restarting';
 
-const WINDOWS = 'win32';
 const SIGKILL = 'SIGKILL';
-const PLATFORM = Os.platform();
 
 const sleep = function (self) {
 	self.status = SLEEPING;
@@ -29,28 +25,16 @@ const sleep = function (self) {
 	SleepAsync.sleep(self.sleepTime, function () {
 		if (self.status === STOPPING || self.status === STOPPED) return;
 		birth(self);
+		return;
 	});
 };
 
-const kill = function (self, callback) {
+const kill = function (self) {
 	if (self.pid === 0) return;
-	if (PLATFORM === WINDOWS) { Exec('taskkill /pid ' + self.pid + ' /T /F'); return; }
 
-	PsTree(self.pid, function (_, pids) {
-		pids = (pids || []).map(function (item) {
-			return parseInt(item.PID, 10);
-		});
-
-		pids.push(self.pid);
-		const last = pids.length - 1;
+	TreeKill(self.pid, SIGKILL, function () {
 		self.pid = 0;
-
-		pids.forEach(function (pid, index) {
-			try { process.kill(pid, SIGKILL); }
-			catch (e) { /* ignore */ }
-
-			if (index === last && callback) return callback();
-		});
+		return;
 	});
 };
 
@@ -87,18 +71,16 @@ const birth = function (self) {
 	self.child.on('exit', function (code, signal) {
 		self._exited(code, signal);
 
-		if (self.sleeps > self.maxSleepCount) self._crashed();
-
+		if (self.status === ERRORED) return;
+		else if (self.isCrashed) self._crashed();
 		else if (self.status === RESTARTING) birth(self);
-
-		else if (self.status === STARTING || self.status === STARTED) sleep(self);
-
 		else if (self.status === STOPPING || self.status === STOPPED) self._stopped();
+		else if (self.status === STARTING || self.status === STARTED || self.status === SLEEPING) sleep(self);
 	});
 
 	if (self.status === SLEEPING) self._sleeped();
-	if (self.status === STARTING) self._started();
-	if (self.status === RESTARTING) self._restarted();
+	else if (self.status === STARTING) self._started();
+	else if (self.status === RESTARTING) self._restarted();
 };
 
 const Monitor = function (options) {
@@ -122,9 +104,10 @@ const Monitor = function (options) {
 	self.stdout = options.stdout;
 	self.stderr = options.stderr;
 
-	self.sleepTime = options.sleepTime || 1000; // milliseconds
-	self.paddingTime = options.paddingTime || 5000; // milliseconds
-	self.maxSleepCount = options.maxSleepCount || 1000; // count
+	self.isCrashed = false;
+	self.sleepTime = options.sleepTime || 1000; // ms
+	self.paddingTime = options.paddingTime || 5000; // ms
+	self.maxSleepCount = options.maxSleepCount || 1000;
 
 	self.exits = 0;
 	self.stops = 0;
@@ -149,7 +132,7 @@ Util.inherits(Monitor, Events.EventEmitter);
 Monitor.prototype.start = function () {
 	const self = this;
 
-	if (self.status === STARTING || self.status === STARTED || self.status === RESTARTING || self.status === SLEEPING) return;
+	if (self.status === STARTING || self.status === STARTED || self.status === RESTARTING || self.status === SLEEPING || self.status === STOPPING) return;
 
 	self.status = STARTING;
 
@@ -169,9 +152,9 @@ Monitor.prototype.stop = function () {
 Monitor.prototype.restart = function () {
 	const self = this;
 
-	if (self.status === RESTARTING || self.status === SLEEPING) return;
+	if (self.status === RESTARTING || self.status === SLEEPING || self.status === STOPPING) return;
 
-	if (self.status === STOPPING || self.status === STOPPED) {
+	if (self.status === STOPPED || self.status === CREATED) {
 		self.status = RESTARTING;
 		birth(self);
 		return;
@@ -192,6 +175,14 @@ Monitor.prototype.toJSON = function () {
 		name: self.name,
 		status: self.status,
 
+		exits: self.exits,
+		stops: self.stops,
+		starts: self.starts,
+		errors: self.errors,
+		sleeps: self.sleeps,
+		crashes: self.crashes,
+		restarts: self.restarts,
+
 		exited: self.exited,
 		created: self.created,
 		stopped: self.stopped,
@@ -200,14 +191,6 @@ Monitor.prototype.toJSON = function () {
 		sleeped: self.sleeped,
 		crashed: self.crashed,
 		restarted: self.restarted,
-
-		exits: self.exits,
-		stops: self.stops,
-		starts: self.starts,
-		errors: self.errors,
-		sleeps: self.sleeps,
-		crashes: self.crashes,
-		restarts: self.restarts,
 
 		sleepTime: self.sleepTime,
 		paddingTime: self.paddingTime,
@@ -253,15 +236,18 @@ Monitor.prototype._restarted = function () {
 Monitor.prototype._sleeped = function (code, signal) {
 	const self = this;
 
-	// resets the sleeps
 	const nowDate = Date.now();
 	const paddingTime = self.paddingTime;
 	const sleepTime = self.sleepTime;
 	const sleepedDate = self.sleeped || nowDate;
 	const lastSleepTime = nowDate - sleepedDate;
 	const maxSleepTime = sleepTime + paddingTime;
+
+	// if true resets the sleeps
 	if (lastSleepTime > maxSleepTime) self.sleeps = 0;
 	else self.sleeps++;
+
+	if (self.sleeps > self.maxSleepCount) self.isCrashed = true;
 
 	self.status = STARTED;
 	self.sleeped = Date.now();

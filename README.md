@@ -95,7 +95,7 @@ Note: less `paddingTime` triggers more frequent crashes
 
 * `monitor.on('restart', callback)` Same as starting then stopping.
 
-* `monitor.on('error', callback)` Emitted an error passing `(data)`.
+* `monitor.on('error', callback)` Emitted an error passing `(data)`. Triggered on could not spawn, kill, or message fail.
 
 * `monitor.on('stdout', callback)` Emitted an stdout passing `(data)`.
 
@@ -114,18 +114,21 @@ Note: less `paddingTime` triggers more frequent crashes
 
 
 
+## License ##
+
+Copyright (c) 2016 Alexander Steven Elias All Rights Reserved
+
 
 ## Terms Of Use ##
 
 ### Can ###
-You can use this package as is in any project even for profit.
+* You can use this package as is in any project even for profit.
 
-You can indirectly charge others to use your project which contains the original unmodified code of this package.
+* You can charge others to use your project which contains the original unmodified code of this package.
 
-You can submit a request to modify the code. Any modification accepted are adopted as if the original author modified it.
-
+* You can submit a request to modify the code. Any modification accepted are adopted as if the original author modified it.
 
 ### Cant ###
-You can't charge others to directly or exclusively use this package.
+* You can't charge others to directly or exclusively use this package.
 
-You can't modify the code in anyway accept in accordance with the original author's permission.
+* You can't modify the code in anyway accept in accordance with the original author's permission.

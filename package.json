@@ -28,6 +28,7 @@
   "homepage": "https://github.com/AlexanderElias/revive#readme",
   "dependencies": {
     "ps-tree": "^1.0.1",
-    "sleep-async": "^1.0.1"
+    "sleep-async": "^1.0.1",
+    "tree-kill": "^1.1.0"
   }
 }
