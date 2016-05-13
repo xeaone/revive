@@ -33,19 +33,17 @@ const sleep = function (self) {
 };
 
 const kill = function (self, callback) {
-	var pid = self.pid;
-	var last = null;
+	if (self.pid === 0) return;
+	if (PLATFORM === WINDOWS) { Exec('taskkill /pid ' + self.pid + ' /T /F'); return; }
 
-	if (pid === 0) return;
-	if (PLATFORM === WINDOWS) { Exec('taskkill /pid ' + pid + ' /T /F'); return; }
-
-	PsTree(pid, function (_, pids) {
+	PsTree(self.pid, function (_, pids) {
 		pids = (pids || []).map(function (item) {
 			return parseInt(item.PID, 10);
 		});
 
-		pids.push(pid);
-		last = pids.length - 1;
+		pids.push(self.pid);
+		const last = pids.length - 1;
+		self.pid = 0;
 
 		pids.forEach(function (pid, index) {
 			try { process.kill(pid, SIGKILL); }
