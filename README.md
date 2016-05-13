@@ -6,47 +6,67 @@ Spawns a process, monitors it, and automatically revives.
 npm install revive
 ```
 
+Only has two dependencies!
+
+
 
 ## Example ##
 
 ```JavaScript
 const Revive = require('revive');
 
-const monitor = Revive('/home/user/code/node/app/index.js', {
-	name: 'test',
-	env: { PORT: 4444 },
-	cwd: '/home/user/code/node/app/.',
+const ARG = ['app.js'];
+const CWD = '/home/user/code/node/app/.';
 
-	stdout: __dirname + '/log',
-	stderr: __dirname + '/log',
+const options = {
+	name: 'test',
+
+	arg: ARG,
+	cwd: CWD,
+	env: { PORT: 4444 },
+
+	stdout: '/logs/stdout.log',
+	stderr: '/logs/stderr.log',
 
 	sleepTime: 1000,
 	paddingTime: 5000,
 	maxSleepCount: 1000
-})
+};
+
+const monitor = Revive(options);
+
+monitor.on('start', function () {
+	console.log(monitor.toJSON());
+});
 
 monitor.start();
 ```
 
+
+
 # Options ##
 
-`cwd: String`           REQUIRED current working directory
+* `arg: Array`            REQUIRED arguments or node script
 
-`name: String`          OPTIONAL name
+* `cwd: String`           REQUIRED current working directory
 
-`stdout: String`        OPTIONAL file path (event will still execute)
+* `cmd: String`           OPTIONAL defaults to process.execPath basically the systems node path
 
-`stderr: String`        OPTIONAL file path (event will still execute)
+* `name: String`          OPTIONAL name
 
-`sleepTime: 1000`       DEFAULT sleep between revives (milliseconds)
+* `stdout: String`        OPTIONAL pipe to file path (event will still execute)
 
-`paddingTime: 5000`     DEFAULT padding between reset of `sleeps` (milliseconds)
+* `stderr: String`        OPTIONAL pipe to file path (event will still execute)
 
-`maxSleepCount: 1000`   DEFAULT revives between `sleepTime` + `paddingTime` (1000 trigger crash)
+* `sleepTime: 1000`       DEFAULT sleep between revives (milliseconds)
 
-`env: {}`               DEFAULT environment variables
+* `paddingTime: 5000`     DEFAULT padding between reset of `sleeps` (milliseconds)
 
-`data: {}`              DEFAULT custom object
+* `maxSleepCount: 1000`   DEFAULT revives between `sleepTime` + `paddingTime` (1000 trigger crash)
+
+* `env: {}`               DEFAULT environment variables
+
+* `data: {}`              DEFAULT custom object
 
 
 
@@ -62,7 +82,7 @@ Note: less `paddingTime` triggers more frequent crashes
 
 * `monitor.restart()` Restarts the monitor by stopping then starting
 
-* `monitor.toJson()` Creates a stringyifiable object
+* `monitor.toJSON()` Creates a stringyifiable object
 
 
 
@@ -83,6 +103,12 @@ Note: less `paddingTime` triggers more frequent crashes
 * `monitor.on('crash', callback)` Triggered when `sleeps` equals `maxSleepCount`
 
 * `monitor.on('exit', callback)` Exited passing `(code, signal)`. Triggered on crash, stop, sleep, and restart.
+
+
+## TODO ##
+
+* command line utility
+
 
 
 ## Conditions ##

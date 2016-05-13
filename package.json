@@ -1,29 +1,33 @@
 {
-	"name": "revive",
-	"version": "1.0.2",
-	"description": "Spawns a process, monitors it, and automatically revives.",
-	"main": "index.js",
-	"scripts": {
-		"test": "node test.js"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/AlexanderElias/revive.git"
-	},
-	"keywords": [
-		"revive",
-		"respawn",
-		"monitor",
-		"forever",
-		"pm2",
-		"alive",
-		"keep",
-		"alive"
-	],
-	"author": "Alexander Steven Elias",
-	"license": "SEE LICENSE IN",
-	"bugs": {
-		"url": "https://github.com/AlexanderElias/revive/issues"
-	},
-	"homepage": "https://github.com/AlexanderElias/revive#readme"
+  "name": "revive",
+  "version": "1.0.2",
+  "description": "Spawns a process, monitors it, and automatically revives.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexanderElias/revive.git"
+  },
+  "keywords": [
+    "revive",
+    "respawn",
+    "monitor",
+    "forever",
+    "pm2",
+    "alive",
+    "keep",
+    "alive"
+  ],
+  "author": "Alexander Steven Elias",
+  "license": "SEE LICENSE IN LICENSE",
+  "bugs": {
+    "url": "https://github.com/AlexanderElias/revive/issues"
+  },
+  "homepage": "https://github.com/AlexanderElias/revive#readme",
+  "dependencies": {
+    "ps-tree": "^1.0.1",
+    "sleep-async": "^1.0.1"
+  }
 }
