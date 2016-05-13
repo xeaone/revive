@@ -1,6 +1,6 @@
 {
   "name": "revive",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Spawns a process, monitors it, and automatically revives.",
   "main": "index.js",
   "scripts": {
