@@ -160,7 +160,7 @@ Monitor.prototype.stop = function () {
 	const self = this;
 
 	if (self.status === STOPPING || self.status === STOPPED) return;
-	
+
 	self.status = STOPPING;
 
 	kill(self);
@@ -174,11 +174,13 @@ Monitor.prototype.restart = function () {
 	if (self.status === STOPPING || self.status === STOPPED) {
 		self.status = RESTARTING;
 		birth(self);
+		return;
 	}
 
 	if (self.status === STARTING || self.status === STARTED) {
 		self.status = RESTARTING;
 		kill(self);
+		return;
 	}
 };
 
