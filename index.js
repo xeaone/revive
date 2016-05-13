@@ -69,16 +69,12 @@ const birth = function (self) {
 	self.pid = self.child.pid;
 
 	if (self.child.stdout) {
-		// if (self.stdout) self.child.stdout.pipe(Fs.createWriteStream(self.stdout));
-
 		self.child.stdout.on('data', function (data) {
 			self.emit('stdout', data.toString());
 		});
 	}
 
 	if (self.child.stderr) {
-		// if (self.stderr) self.child.stderr.pipe(Fs.createWriteStream(self.stderr));
-
 		self.child.stderr.on('data', function (data) {
 			self.emit('stderr', data.toString());
 		});
@@ -164,7 +160,7 @@ Monitor.prototype.stop = function () {
 	const self = this;
 
 	if (self.status === STOPPING || self.status === STOPPED) return;
-
+	
 	self.status = STOPPING;
 
 	kill(self);
@@ -175,9 +171,15 @@ Monitor.prototype.restart = function () {
 
 	if (self.status === RESTARTING || self.status === SLEEPING) return;
 
-	self.status = RESTARTING;
+	if (self.status === STOPPING || self.status === STOPPED) {
+		self.status = RESTARTING;
+		birth(self);
+	}
 
-	kill(self);
+	if (self.status === STARTING || self.status === STARTED) {
+		self.status = RESTARTING;
+		kill(self);
+	}
 };
 
 Monitor.prototype.toJSON = function () {
