@@ -1,6 +1,6 @@
 # Revive
 
-Spawns a process, monitors it's states, and automatically revives it.
+Spawns a process, monitors it, and automatically revives.
 
 ```
 npm install revive
@@ -13,27 +13,45 @@ npm install revive
 const Revive = require('revive');
 
 const monitor = Revive('/home/user/code/node/app/index.js', {
-	name: 'test',				// set name
+	name: 'test',
+	env: { PORT: 4444 },
+	cwd: '/home/user/code/node/app/.',
 
-	env: { PORT: 4444 },			// set environment variables
+	stdout: __dirname + '/log',
+	stderr: __dirname + '/log',
 
-	cwd: '/home/user/code/node/app/.',	// set current working directory
-
-	stdout: __dirname + '/log',		// (OPTIONAL) set a path for the stdout the stdout event will still execute
-
-	stderr: __dirname + '/log',		// (OPTIONAL) set a path for the stderr the stderr event will still execute
-
-	sleepTime: 1000, 				// (DEFAULT) set time in milliseconds to sleep between revives
-
-	paddingTime: 5000				// (DEFAULT) set time in milliseconds between revives that will
-							// reset the sleeps so as not to trigger a crash
-							// less time enables more frequent executes of a crashes
-
-	maxSleepCount: 1000, 			// set amount of revives between sleepTime + paddingTime						
+	sleepTime: 1000,
+	paddingTime: 5000,
+	maxSleepCount: 1000
 })
 
 monitor.start();
 ```
+
+# Options ##
+
+`cwd: String`           REQUIRED current working directory
+
+`name: String`          OPTIONAL name
+
+`stdout: String`        OPTIONAL file path (event will still execute)
+
+`stderr: String`        OPTIONAL file path (event will still execute)
+
+`sleepTime: 1000`       DEFAULT sleep between revives (milliseconds)
+
+`paddingTime: 5000`     DEFAULT padding between reset of `sleeps` (milliseconds)
+
+`maxSleepCount: 1000`   DEFAULT revives between `sleepTime` + `paddingTime` (1000 trigger crash)
+
+`env: {}`               DEFAULT environment variables
+
+`data: {}`              DEFAULT custom object
+
+
+
+Note: less `paddingTime` triggers more frequent crashes
+
 
 
 ## API ##
@@ -50,21 +68,21 @@ monitor.start();
 
 ## Events ##
 
-* `monitor.on('start', callback)` The process was started. (Warning Async: child process may not be available)
+* `monitor.on('start', callback)` Warning async so process may not be available immediately.
 
 * `monitor.on('stop', callback)`  The process and it's tree has been fully killed.
 
 * `monitor.on('restart', callback)` Same as starting then stopping.
 
-* `monitor.on('error', callback)` Process emitted an error passing `(data)`.
+* `monitor.on('error', callback)` Emitted an error passing `(data)`.
 
-* `monitor.on('stdout', callback)` Process emitted an stdout passing `(data)`.
+* `monitor.on('stdout', callback)` Emitted an stdout passing `(data)`.
 
-* `monitor.on('stderr', callback)` Process emitted an stderr passing `(data)`.
+* `monitor.on('stderr', callback)` Emitted an stderr passing `(data)`.
 
-* `monitor.on('crash', callback)` The process has crashed. This happens when the process exited then slept for the maxSleepCount.
+* `monitor.on('crash', callback)` Triggered when `sleeps` equals `maxSleepCount`
 
-* `monitor.on('exit', callback)` Process has fully exited passing `(code, signal)`. This event takes place any time the child process has exited tigers are the following, crash, stop, sleep, and restart.
+* `monitor.on('exit', callback)` Exited passing `(code, signal)`. Triggered on crash, stop, sleep, and restart.
 
 
 ## Conditions ##
