@@ -1,12 +1,12 @@
 # Revive
 
 Spawns a process, monitors it, and automatically revives.
+Only has two dependencies!
 
 ```
 npm install revive
 ```
 
-Only has two dependencies!
 
 
 
@@ -44,6 +44,7 @@ monitor.start();
 
 
 
+
 # Options ##
 
 * `arg: Array`            REQUIRED arguments or node script
@@ -68,9 +69,8 @@ monitor.start();
 
 * `data: {}`              DEFAULT custom object
 
-
-
 Note: less `paddingTime` triggers more frequent crashes
+
 
 
 
@@ -83,6 +83,7 @@ Note: less `paddingTime` triggers more frequent crashes
 * `monitor.restart()` Restarts the monitor by stopping then starting
 
 * `monitor.toJSON()` Creates a stringyifiable object
+
 
 
 
@@ -105,14 +106,22 @@ Note: less `paddingTime` triggers more frequent crashes
 * `monitor.on('exit', callback)` Exited passing `(code, signal)`. Triggered on crash, stop, sleep, and restart.
 
 
+
+
 ## TODO ##
 
 * command line utility
 
 
 
-## Conditions ##
 
-Basically you can use this package as is in any project even for profit. Conditions do apply.
-You cannot modify and redistribute the code base in anyway accept in accordance with the primary maintainer's permission.
-You can not charge others to directly or exclusively use this package. Indirectly it is acceptable to charge others but only to the extent that this package is used within the context of a project that uses this projects API.
+## Terms Of Use ##
+
+### Can ###
+You can use this package as is in any project even for profit.
+You can indirectly charge others to use your project which contains the original unmodified code of this package.
+You can submit a request to modify the code. Any modification accepted are adopted as if the original author modified it.
+
+### Cant ###
+You can't charge others to directly or exclusively use this package.
+You can't modify the code in anyway accept in accordance with the original author's permission.
