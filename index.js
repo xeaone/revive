@@ -88,7 +88,7 @@ const Monitor = function (options) {
 
 	Events.EventEmitter.call(self);
 
-	self.status = CREATED;
+	self.status = options.status || CREATED;
 
 	self.pid = 0;
 	self.child = null;
