@@ -108,9 +108,9 @@ Note: less `paddingTime` triggers more frequent crashes
 
 
 
-## TODO ##
+## Terms ##
+Basically if you modify this project you have to contribute those modifications back to this project.
 
-* command line utility
 
 
 
