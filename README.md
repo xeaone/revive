@@ -107,13 +107,6 @@ Note: less `paddingTime` triggers more frequent crashes
 
 
 
-
-## Terms ##
-Basically if you modify this project you have to contribute those modifications back to this project.
-
-
-
-
 ## License ##
 
 Licensed Under MPL 2.0
