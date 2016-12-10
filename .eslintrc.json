@@ -5,7 +5,7 @@
 		"es6": true
 	},
 	"rules": {
-		"strict": 1,
+		"strict": 0,
 		"no-undef": 1,
 		"no-console": 0,
 		"no-extra-semi": 1,

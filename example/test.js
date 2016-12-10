@@ -1,44 +1,41 @@
-'use strict';
-
-const Revive = require('./index');
-
-const ARG = ['app.js'];
-const CWD = '/Users/Alex/psudo-server/www/node/test/.';
+const Path = require('path');
+const Revive = require('../index');
 
 var monitor = Revive({
 	name: 'test',
 
-	arg: ARG,
-	cwd: CWD,
-	env: { PORT: 4444 },
+	arg: ['server.js'],
+	cwd: Path.join(process.cwd(), 'example'),
 
-	sleepTime: 3000,
-	maxSleepCount: 5,
-	paddingTime: 5000,
+	env: { PORT: 8000 },
+
+	sleepTime: 1000,
+	maxSleepCount: 3,
+	paddingTime: 1000,
 
 	stdout: __dirname + '/stdout.log',
 	stderr: __dirname + '/stderr.log'
 });
 
 monitor.on('start', function () {
-	console.log(monitor.toJSON().status + '\n');
+	console.log(monitor.json().status + '\n');
 });
 
 monitor.on('stop', function () {
-	console.log(monitor.toJSON().status + '\n');
+	console.log(monitor.json().status + '\n');
 });
 
 monitor.on('restart', function () {
-	console.log(monitor.toJSON().status + '\n');
-});
-
-monitor.on('error', function (data) {
-	console.log(monitor.toJSON().status);
-	console.log(data + '\n');
+	console.log(monitor.json().status + '\n');
 });
 
 monitor.on('crash', function () {
-	console.log(monitor.toJSON().status + '\n');
+	console.log(monitor.json().status + '\n');
+});
+
+monitor.on('error', function (data) {
+	console.log(monitor.json().status);
+	console.log(data + '\n');
 });
 
 monitor.on('stdout', function (data) {
@@ -50,12 +47,13 @@ monitor.on('stderr', function (data) {
 });
 
 monitor.on('exit', function (code, signal) {
-	console.log(monitor.toJSON().status);
+	// console.log('exit');
+	console.log(monitor.json().status);
 	console.log(code);
 	console.log(signal + '\n');
 });
 
-// monitor.start();
+monitor.start();
 // monitor.stop();
 // monitor.restart();
 

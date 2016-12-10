@@ -49,11 +49,11 @@ monitor.start();
 
 * `arg: Array`            REQUIRED arguments or node script
 
-* `cwd: String`           REQUIRED current working directory
+* `cwd: String`           OPTIONAL defaults to process.cwd() the current working directory
 
-* `cmd: String`           OPTIONAL defaults to process.execPath basically the systems node path
+* `cmd: String`           OPTIONAL defaults to process.execPath the systems node path
 
-* `name: String`          OPTIONAL name
+* `name: String`          OPTIONAL name of the process
 
 * `stdout: String`        OPTIONAL pipe to file path (event will still execute)
 
@@ -67,9 +67,9 @@ monitor.start();
 
 * `env: {}`               DEFAULT environment variables
 
-* `data: {}`              DEFAULT custom object
+* `data: {}`              DEFAULT custom object for you
 
-Note: less `paddingTime` triggers more frequent crashes
+Note: less `paddingTime` triggers more frequent crashes if the process is crashing
 
 
 
