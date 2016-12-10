@@ -34,7 +34,6 @@ const Monitor = function (options) {
 	self.stdout = options.stdout;
 	self.stderr = options.stderr;
 
-	self.status = STOPPED;
 	self.isMaxCrashes = false;
 	self.sleepTime = options.sleepTime || 1000; // ms
 	self.paddingTime = options.paddingTime || 5000; // ms
@@ -48,6 +47,7 @@ const Monitor = function (options) {
 	self.crashes = 0;
 	self.restarts = 0;
 
+	self.status = null;
 	self.exited = null;
 	self.stopped = null;
 	self.started = null;
@@ -62,39 +62,25 @@ Util.inherits(Monitor, Events.EventEmitter);
 
 Monitor.prototype.start = function () {
 	const self = this;
-	if (self.status === STARTED || self.status === RESTARTED) {
-		return;
-	} else {
-		self._starting();
-	}
+	if (self.status !== STARTED) self._starting();
 };
 
 Monitor.prototype.stop = function () {
 	const self = this;
-	if (self.status === STOPPED) {
-		return;
-	} else {
-		self._stopping();
-	}
+	if (self.status !== STOPPED) self._stopping();
 };
 
 Monitor.prototype.restart = function () {
 	const self = this;
-	if (self.status === CRASHED) {
-		return;
-	} else {
-		self._restarting();
-	}
+	if (self.status !== RESTARTED) self._restarting();
 };
 
 Monitor.prototype.json = function () {
 	const self = this;
-
 	return {
 		pid: self.pid,
 		name: self.name,
 		status: self.status,
-
 		exits: self.exits,
 		stops: self.stops,
 		starts: self.starts,
@@ -102,27 +88,22 @@ Monitor.prototype.json = function () {
 		sleeps: self.sleeps,
 		crashes: self.crashes,
 		restarts: self.restarts,
-
 		exited: self.exited,
-		created: self.created,
 		stopped: self.stopped,
 		started: self.started,
 		errored: self.errored,
 		sleeped: self.sleeped,
 		crashed: self.crashed,
 		restarted: self.restarted,
-
 		sleepTime: self.sleepTime,
 		paddingTime: self.paddingTime,
 		maxSleepCount: self.maxSleepCount,
-
 		cwd: self.cwd,
 		arg: self.arg,
-		stdout: self.stdout,
-		stderr: self.stderr,
 		env: self.env,
-
-		data: self.data
+		data: self.data,
+		stdout: self.stdout,
+		stderr: self.stderr
 	};
 };
 
@@ -158,13 +139,9 @@ Monitor.prototype._starting = function (callback) {
 	});
 
 	self.child.on('exit', function (code, signal) {
-		if (self.status === ERRORED) {
-			throw new Error('Revive: could not start process');
-		} else if (signal > 128) {
-			self._exited(code, signal);
-		} else {
-			self._crashing();
-		}
+		if (self.status === ERRORED) throw new Error('Revive: could not start process');
+		else if (signal > 128) self._exited(code, signal);
+		else self._crashing();
 	});
 
 	self._started();
