@@ -1,13 +1,12 @@
-# Revive
+**Process Management Tool | Auto Restarts | Advanced Events | And More**
+**Warning 1.1.1 Breaking API Changes**
 
-Spawns a process, monitors it, and automatically revives.
-Only has two dependencies!
+# Revive
+A process management tool. Events, status, cluster, and automatic restarts.
 
 ```
 npm install revive
 ```
-
-
 
 
 ## Example ##
@@ -15,22 +14,24 @@ npm install revive
 ```JavaScript
 const Revive = require('revive');
 
-const ARG = ['app.js'];
-const CWD = '/home/user/code/node/app/.';
-
 const options = {
 	name: 'test',
 
-	arg: ARG,
-	cwd: CWD,
-	env: { PORT: 4444 },
+	cmd: process.execPath,
+
+	arg: ['app.js'],
+	env: { PORT: 8000 },
+	cwd: '/home/user/code/node/app/.',
+
+	cluster: true,
+	instances: 2,
 
 	stdout: '/logs/stdout.log',
 	stderr: '/logs/stderr.log',
 
 	sleepTime: 1000,
-	paddingTime: 5000,
-	maxSleepCount: 1000
+	waitTime: 6 * 1000,
+	maxCrashCount: 1000
 };
 
 const monitor = Revive(options);
@@ -43,68 +44,63 @@ monitor.start();
 ```
 
 
-
-
 # Options ##
+* `name: String`          Defaults to `null` the name of the process.
 
-* `arg: Array`            REQUIRED arguments or node script
+* `arg: Array`            Defaults to `null` arguments or node script.
 
-* `cwd: String`           OPTIONAL defaults to process.cwd() the current working directory
+* `cwd: String`           Defaults to `process.cwd()` the current working directory.
 
-* `cmd: String`           OPTIONAL defaults to process.execPath the systems node path
+* `cmd: String`           Defaults to `process.execPath` the systems absolute executable/node path.
 
-* `name: String`          OPTIONAL name of the process
+* `cluster: Boolean`      Defaults to `false`.
 
-* `stdout: String`        OPTIONAL pipe to file path (event will still execute)
+* `instances: Number`  Defaults to `Os.cpus().length`
 
-* `stderr: String`        OPTIONAL pipe to file path (event will still execute)
+* `stdout: String`        Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
 
-* `sleepTime: 1000`       DEFAULT sleep between revives (milliseconds)
+* `stderr: String`        Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
 
-* `paddingTime: 5000`     DEFAULT padding between reset of `sleeps` (milliseconds)
+* `sleepTime:Array`       Defaults to `[1000]` in milliseconds to sleep between starts after a crash. The values must be greater than the `waitTime`.
 
-* `maxSleepCount: 1000`   DEFAULT revives between `sleepTime` + `paddingTime` (1000 trigger crash)
+* `waitTime: Number`      Defaults to `6 * 1000` in milliseconds or one minute. The wait time between `sleeps`/`crashes` that will count towards the `maxCrashCount`
 
-* `env: {}`               DEFAULT environment variables
+* `maxCrashCount: Number` Defaults to `1000` crashes. A crash is triggered and the process exited at `nth + 1`.
 
-* `data: {}`              DEFAULT custom object for you
+* `env: {}`               Environment variables for the process.
 
-Note: less `paddingTime` triggers more frequent crashes if the process is crashing
-
-
+* `data: {}`              A custom object for you.
 
 
 ## API ##
-
 * `monitor.start()` Starts the monitor
 
-* `monitor.stop()` Stops the monitor (kills the process if its running with SIGKILL)
+* `monitor.stop()` Stops the monitor (kills the process if its running with SIGKILL).
 
-* `monitor.restart()` Restarts the monitor by stopping then starting (process must be started)
+* `monitor.restart()` Restarts the monitor by stopping then starting (process must be started).
 
-* `monitor.toJSON()` Creates a stringyifiable object
-
+* `monitor.json()` Creates a stringyifiable object. The object returns help stats and data about the process. When using clusters it is important to keep in mind that much of the data will be multiplied by the number of `instances`,
 
 
 
 ## Events ##
-
 * `monitor.on('start', callback)` Warning async so process may not be available immediately.
 
 * `monitor.on('stop', callback)`  The process and it's tree has been fully killed.
 
-* `monitor.on('restart', callback)` Same as starting then stopping.
+* `monitor.on('restart', callback)` Same as stopping then starting or vice versa.
 
 * `monitor.on('error', callback)` Emitted an error passing `(data)`. Triggered on could not spawn, kill, or message fail.
 
-* `monitor.on('stdout', callback)` Emitted an stdout passing `(data)`.
+* `monitor.on('stdout', callback)` Emitted an stdout passing `(data)` (Only available if no `Options.stdout` is `pipe`).
 
-* `monitor.on('stderr', callback)` Emitted an stderr passing `(data)`.
+* `monitor.on('stderr', callback)` Emitted an stderr passing `(data)` (Only available if no `Options.stderr` is `pipe`).
 
-* `monitor.on('crash', callback)` Triggered when `sleeps` equals `maxSleepCount`
+* `monitor.on('sleep', callback)` Triggered when process crashes and enters sleep.
 
-* `monitor.on('exit', callback)` Exited passing `(code, signal)`. Triggered on crash, stop, sleep, and restart.
+* `monitor.on('crash', callback)` Triggered when the process crashes.
 
+* `monitor.on('exit', callback)` Exited passing `(code, signal)`.
 
 
 ## License ##
