@@ -7,13 +7,16 @@ var monitor = Revive({
 	arg: ['server.js'],
 	cwd: __dirname,
 
-	env: { PORT: 8000 },
+	env: {
+		PORT: 8000,
+		// PREVENT_SIGTERM: false
+	},
 
 	cluster: true,
 	instances: 2,
 
-	sleepTime: [3000],
-	waitTime: 4000,
+	// sleepTime: [1000],
+	// crashTime: 4000,
 
 	maxCrashCount: 2,
 
@@ -21,16 +24,17 @@ var monitor = Revive({
 	stderr: __dirname + '/stderr.log'
 });
 
-monitor.on('status', function (status, p1, p2) {
+monitor.on('status', function (status, p1, p2, p3) {
 	console.log(status);
 	if (p1) console.log(p1);
 	if (p2) console.log(p2);
+	if (p3) console.log(p3);
 });
 
 // monitor.on('stdout', function (data) {
 // 	console.log('stdout: ' + data);
 // });
-//
+
 // monitor.on('stderr', function (data) {
 // 	console.log('stderr: ' + data);
 // });
@@ -39,7 +43,7 @@ monitor.on('status', function (status, p1, p2) {
 // 	console.log(monitor.json().status);
 // 	console.log(data + '\n');
 // });
-//
+
 // monitor.on('exit', function (code, signal) {
 // 	console.log(monitor.json().status);
 // 	console.log(code);
@@ -49,7 +53,11 @@ monitor.on('status', function (status, p1, p2) {
 monitor.start();
 
 setTimeout(function () {
-	// console.log(monitor.json());
-	monitor.stop();
-	// monitor.restart();
-}, 3000);
+	monitor.stop(function () {
+		setTimeout(function () {
+			monitor.start();
+		}, 1000);
+	});
+}, 1000);
+
+// monitor.restart();

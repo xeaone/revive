@@ -16,3 +16,11 @@ http.createServer(function (request, response) {
 .listen(process.env.PORT, function() {
 	console.log('Server Listening On: http://localhost:' + process.env.PORT);
 });
+
+if (process.env.PREVENT_SIGTERM) {
+	process.on('SIGTERM', function () {
+		setTimeout(function () {
+			console.log('PREVENTED_SIGTERM');
+		}, 15000);
+	});
+}

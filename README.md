@@ -30,7 +30,7 @@ const options = {
 	stderr: '/logs/stderr.log',
 
 	sleepTime: 1000,
-	waitTime: 6 * 1000,
+	crashTime: 6 * 1000,
 	maxCrashCount: 1000
 };
 
@@ -55,15 +55,15 @@ monitor.start();
 
 * `cluster: Boolean`      Defaults to `false`.
 
-* `instances: Number`  Defaults to `Os.cpus().length`
+* `instances: Number`     Defaults to `Os.cpus().length`
 
 * `stdout: String`        Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
 
 * `stderr: String`        Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
 
-* `sleepTime:Array`       Defaults to `[1000]` in milliseconds to sleep between starts after a crash. The values must be greater than the `waitTime`.
+* `sleepTime:Array`       Defaults to `[1000]` in milliseconds to sleep between start after a crash.
 
-* `waitTime: Number`      Defaults to `6 * 1000` in milliseconds or one minute. The wait time between `sleeps`/`crashes` that will count towards the `maxCrashCount`
+* `crashTime: Number`     Defaults to `6000`ms. The time until the `maxCrashCount` resets. So if `1000` crashes happen in `60`s then the process will exit.
 
 * `maxCrashCount: Number` Defaults to `1000` crashes. A crash is triggered and the process exited at `nth + 1`.
 
