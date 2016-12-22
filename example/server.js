@@ -17,10 +17,18 @@ http.createServer(function (request, response) {
 	console.log('Server Listening On: http://localhost:' + process.env.PORT);
 });
 
-if (process.env.PREVENT_SIGTERM) {
-	process.on('SIGTERM', function () {
+
+process.on('SIGTERM', function () {
+	if (process.env.PREVENT_SIGTERM === true) {
 		setTimeout(function () {
 			console.log('PREVENTED_SIGTERM');
 		}, 15000);
-	});
-}
+	} else {
+		console.log('SIGTERM');
+	}
+	console.log('SIGTERM');
+});
+
+// process.on('exit', function () {
+// 	console.log('exit');
+// });
