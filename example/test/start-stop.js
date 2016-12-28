@@ -1,4 +1,3 @@
-const PromiseTimers = require('promise-timers');
 const Monitor = require('../monitor');
 
 Promise.resolve().then(function (){

@@ -9,7 +9,7 @@ const monitor = Revive({
 
 	env: {
 		PORT: 8000,
-		PREVENT_SIGTERM: true
+		PREVENT_SIGTERM: false
 	},
 
 	cluster: true,
