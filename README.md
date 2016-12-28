@@ -1,16 +1,18 @@
 **Process Management Tool | Auto Restarts | Advanced Events | And More**
 **Warning 1.1.1 Breaking API Changes**
 
+
 # Revive
 A process management tool. Events, status, cluster, and automatic restarts.
 
+
+## Install ##
 ```
 npm install revive
 ```
 
 
 ## Example ##
-
 ```JavaScript
 const Revive = require('revive');
 
@@ -44,67 +46,72 @@ monitor.start();
 ```
 
 
-# Options ##
-* `name: String`          Defaults to `null` the name of the process.
+## Options ##
+- `name: String`          Defaults to `null` the name of the process.
 
-* `arg: Array`            Defaults to `null` arguments or node script.
+- `arg: Array`            Defaults to `null` arguments or node script.
 
-* `cwd: String`           Defaults to `process.cwd()` the current working directory.
+- `cwd: String`           Defaults to `process.cwd()` the current working directory.
 
-* `cmd: String`           Defaults to `process.execPath` the systems absolute executable/node path.
+- `cmd: String`           Defaults to `process.execPath` the systems absolute executable/node path.
 
-* `cluster: Boolean`      Defaults to `false`.
+- `cluster: Boolean`      Defaults to `false`.
 
-* `instances: Number`     Defaults to `Os.cpus().length`
+- `instances: Number`     Defaults to `Os.cpus().length`
 
-* `stdout: String`        Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
+- `stdout: String`        Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
 
-* `stderr: String`        Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
+- `stderr: String`        Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
 
-* `sleepTime:Array`       Defaults to `[1000]` in milliseconds to sleep between start after a crash.
+- `sleepTime:Array`       Defaults to `[1000]` in milliseconds to sleep between start after a crash.
 
-* `crashTime: Number`     Defaults to `6000`ms. The time until the `maxCrashCount` resets. So if `1000` crashes happen in `60`s then the process will exit.
+- `crashTime: Number`     Defaults to `60000`ms. The time until the `maxCrashCount` resets. So if `1000` crashes happen in `60`s then the process will exit.
 
-* `maxCrashCount: Number` Defaults to `1000` crashes. A crash is triggered and the process exited at `nth + 1`.
+- `maxCrashCount: Number` Defaults to `1000` crashes. A crash is triggered and the process exited at `nth + 1`.
 
-* `env: {}`               Environment variables for the process.
+- `env: {}`               Environment variables for the process.
 
-* `data: {}`              A custom object for you.
+- `data: {}`              A custom object for you.
 
 
 ## API ##
-* `monitor.start()` Starts the monitor
+- `monitor.start()` Starts the monitor
 
-* `monitor.stop()` Stops the monitor (kills the process if its running with SIGKILL).
+- `monitor.stop()` Stops the monitor (kills the process if its running with `SIGKILL`).
 
-* `monitor.restart()` Restarts the monitor by stopping then starting (process must be started).
+- `monitor.restart()` Restarts the monitor by stopping then starting (process must be started).
 
-* `monitor.json()` Creates a stringyifiable object. The object returns help stats and data about the process. When using clusters it is important to keep in mind that much of the data will be multiplied by the number of `instances`,
-
-
-
-## Events ##
-* `monitor.on('start', callback)` Warning async so process may not be available immediately.
-
-* `monitor.on('stop', callback)`  The process and it's tree has been fully killed.
-
-* `monitor.on('restart', callback)` Same as stopping then starting or vice versa.
-
-* `monitor.on('error', callback)` Emitted an error passing `(data)`. Triggered on could not spawn, kill, or message fail.
-
-* `monitor.on('stdout', callback)` Emitted an stdout passing `(data)` (Only available if no `Options.stdout` is `pipe`).
-
-* `monitor.on('stderr', callback)` Emitted an stderr passing `(data)` (Only available if no `Options.stderr` is `pipe`).
-
-* `monitor.on('sleep', callback)` Triggered when process crashes and enters sleep.
-
-* `monitor.on('crash', callback)` Triggered when the process crashes.
-
-* `monitor.on('exit', callback)` Exited passing `(code, signal)`.
+- `monitor.json()` Creates a stringyifiable object. The object returns stats and data about the process.
 
 
-## License ##
+## Cluster Events ##
+- `monitor.on('start', callback)` Starts the process. Warning async so process may not be available immediately.
 
-Licensed Under MPL 2.0
+- `monitor.on('stop', callback)`  The process and it's tree is sent a `SIGTERM` signal. If the process does not terminate after ten seconds then the process is sent a `SIGKILL` signal.
 
-Copyright (c) 2016 [Alexander Elias](https://github.com/AlexanderElias/)
+- `monitor.on('restart', callback)` Same as stopping then starting or vice versa.
+
+- `monitor.on('stdout', callback)` Emits an stdout. Only available if no `Options.stdout` is `pipe`.
+	- `Stdout` Parameter the stdout message.
+
+- `monitor.on('stderr', callback)` Emits an stderr. Only available if no `Options.stderr` is `pipe`.
+	- `Stderr` Parameter the stderr message.
+
+- `monitor.on('error', callback)` Emits when the process could not spawn, kill, or a message failed.
+	- `Error` Parameter the error message.
+
+- `monitor.on('exit', callback)` The process has exited.
+	- `Code` The numeric exit code
+	- `Signal` The string signal
+
+
+## Instance Events ##
+- `monitor.on('reload', callback)` Zero downtime restart if `cluster` is set to `true` and `instances` is greater than one.
+
+- `monitor.on('sleep', callback)` Triggered when process crashes and enters sleep.
+
+- `monitor.on('crash', callback)` Triggered when the process crashes.
+
+
+## Issues ##
+Immediate `start` then `stop` execution does not send the signals. This could be a problem with node.js.

@@ -21,12 +21,13 @@
     "alive"
   ],
   "author": "Alexander Steven Elias",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MPL-2.0",
   "bugs": {
     "url": "https://github.com/AlexanderElias/revive/issues"
   },
   "homepage": "https://github.com/AlexanderElias/revive#readme",
   "dependencies": {
+    "promise-timers": "^1.0.0",
     "ps-tree": "^1.1.0",
     "tree-kill": "^1.1.0"
   }
