@@ -1,5 +1,5 @@
 const PsTreePromise = require('./lib/ps-tree-promise');
-const PromiseTimers = require('promise-timers');
+const PromiseTool = require('promise-tool');
 const CpuCount = require('os').cpus().length;
 const ChildProcess = require('child_process');
 const Cluster = require('cluster');
@@ -20,6 +20,7 @@ const CRASH = 'CRASH';
 const SLEEP = 'SLEEP';
 const ERROR = 'ERROR';
 const CREATE = 'CREATE';
+const RELOAD = 'RELOAD';
 const RESTART = 'RESTART';
 
 const Monitor = function (options) {
@@ -31,11 +32,11 @@ const Monitor = function (options) {
 	self.state = OFF;
 	self.status = CREATE;
 
-	self.pids = [];
-	self.workers = [];
-
 	self.cluster = options.cluster || false;
 	self.instances = options.cluster === true ? options.instances || CpuCount : 1;
+
+	self.pids = Array(self.instances).fill(0);
+	self.workers = [];
 
 	self.stdout = options.stdout;
 	self.stderr = options.stderr;
@@ -48,18 +49,20 @@ const Monitor = function (options) {
 	self.env = options.env || {};
 	self.data = options.data || {};
 
-	self.createCount = 0;
+	self.createCount = 1;
 	self.startCount = 0;
 	self.stopCount = 0;
+	self.reloadCount = 0;
 	self.restartCount = 0;
 	self.sleepCount = 0;
 	self.crashCount = 0;
 	self.errorCount = 0;
 	self.exitCount = 0;
 
-	self.createDate = null;
+	self.createDate = Date.now();
 	self.startDate = null;
 	self.stopDate = null;
+	self.reloadDate = null;
 	self.restartDate = null;
 	self.sleepDate = null;
 	self.crashDate = null;
@@ -110,7 +113,7 @@ Monitor.prototype.start = function (callback) {
 	const self = this;
 
 	return Promise.resolve().then(function () {
-		if (self.state === OFF) return self._createWorkers();
+		return self._createWorkers();
 	}).then(function () {
 		self._status(START);
 	}).then(function () {
@@ -124,7 +127,7 @@ Monitor.prototype.stop = function (callback) {
 	const self = this;
 
 	return Promise.resolve().then(function () {
-		if (self.state === ON) return self._destroyWorkers();
+		return self._destroyWorkers();
 	}).then(function () {
 		self._status(STOP);
 	}).then(function () {
@@ -134,33 +137,31 @@ Monitor.prototype.stop = function (callback) {
 	});
 };
 
-Monitor.prototype.restart = function (callback, sleepTime) {
+Monitor.prototype.restart = function (callback) {
 	const self = this;
 
 	return Promise.resolve().then(function () {
-		if (sleepTime) {
-			self._status(SLEEP);
-			return PromiseTimers.setTimeout(sleepTime);
-		}
-	}).then(function () {
-		if (self.state === ON) return self._destroyWorkers();
-	}).then(function () {
-		if (self.state === OFF) return self._createWorkers();
+		return self._restartWorkers();
 	}).then(function () {
 		self._status(RESTART);
-	}).then(function () {
 		if (callback) return callback();
 	}).catch(function (error) {
 		throw error;
 	});
 };
 
-// zero downtime restart
-// Monitor.prototype.reload = function (callback) {
-// 	const self = this;
-// 	if (self.status !== RELOADED && self.status !== RELOADING) self._reload(true, callback);
-// 	else if (callback) return callback();
-// };
+Monitor.prototype.reload = function (callback) {
+	const self = this;
+
+	return Promise.resolve().then(function () {
+		return self._reloadWorkers();
+	}).then(function () {
+		self._status(RELOAD);
+		if (callback) return callback();
+	}).catch(function (error) {
+		throw error;
+	});
+};
 
 Monitor.prototype.json = function () {
 	const self = this;
@@ -169,11 +170,11 @@ Monitor.prototype.json = function () {
 		state: self.state,
 		status: self.status,
 
-		pids: self.pids,
-		// workers: self.workers,
-
 		cluster: self.cluster,
 		instances: self.instances,
+
+		pids: self.pids,
+		// workers: self.workers,
 
 		stdout: self.stdout,
 		stderr: self.stderr,
@@ -187,6 +188,7 @@ Monitor.prototype.json = function () {
 		createCount: self.createCount,
 		startCount: self.startCount,
 		stopCount: self.stopCount,
+		reloadCount: self.reloadCount,
 		restartCount: self.restartCount,
 		sleepCount: self.sleepCount,
 		crashCount: self.crashCount,
@@ -196,6 +198,7 @@ Monitor.prototype.json = function () {
 		createDate: self.createDate,
 		startDate: self.startDate,
 		stopDate: self.stopDate,
+		reloadDate: self.reloadDate,
 		restartDate: self.restartDate,
 		sleepDate: self.sleepDate,
 		crashDate: self.crashDate,
@@ -216,65 +219,55 @@ Monitor.prototype.json = function () {
 Monitor.prototype._createWorker = function () {
 	const self = this;
 
-	var env = {};
-	var worker = null;
+	return Promise.resolve().then(function () {
+		var env = {};
+		var worker = null;
 
-	env = Object.assign(env, process.env);
-	env = Object.assign(env, self.env);
+		env = Object.assign(env, process.env);
+		env = Object.assign(env, self.env);
 
-	if (self.cluster && Cluster.isMaster) {
-		worker = Cluster.fork(env);
-	} else {
-		worker = {
-			process:
-				ChildProcess.spawn(self.cmd, self.arg, {
-					env: env,
-					cwd: self.cwd,
-					uid: self.uid,
-					gid: self.gid,
-					stdio: self.stdio
-				})
-		};
-	}
+		if (self.cluster && Cluster.isMaster) {
+			worker = Cluster.fork(env);
+		} else {
+			worker = {
+				process:
+					ChildProcess.spawn(self.cmd, self.arg, {
+						env: env,
+						cwd: self.cwd,
+						uid: self.uid,
+						gid: self.gid,
+						stdio: self.stdio
+					})
+			};
+		}
 
-	if (worker.process.stdout) {
-		worker.process.stdout.on('data', function (data) {
-			self.emit('stdout', data.toString());
+		if (worker.process.stdout) {
+			worker.process.stdout.on('data', function (data) {
+				self.emit('stdout', data.toString());
+			});
+		}
+
+		if (worker.process.stderr) {
+			worker.process.stderr.on('data', function (data) {
+				self.emit('stderr', data.toString());
+			});
+		}
+
+		worker.process.on('error', function (error) {
+			self._error(error);
 		});
-	}
 
-	if (worker.process.stderr) {
-		worker.process.stderr.on('data', function (data) {
-			self.emit('stderr', data.toString());
+		worker.process.on('exit', function (code, signal) {
+			self._exit(code, signal, this.pid);
 		});
-	}
 
-	worker.process.on('error', function (error) {
-		self._error(error);
+		return worker;
 	});
-
-	worker.process.on('exit', function (code, signal) {
-		self._exit(code, signal, this.pid);
-	});
-
-	return worker;
 };
 
-Monitor.prototype._createWorkers = function () {
+Monitor.prototype._destoryWorker = function (pid) {
 	const self = this;
 
-	self.state = ON;
-
-	for (var i = 0; i < self.instances; i++) {
-		var worker = self._createWorker();
-		self.workers.splice(i, 1, worker);
-		self.pids.splice(i, 1, worker.process.pid);
-	}
-
-	return PromiseTimers.setTimeout(50);
-};
-
-Monitor.prototype._destoryWorker = function (pid, delay) {
 	if (Os.platform() === 'win32') {
 		return Promise.resolve().then(function () {
 			ChildProcess.exec('taskkill /pid ' + pid + ' /T /F');
@@ -285,7 +278,7 @@ Monitor.prototype._destoryWorker = function (pid, delay) {
 				try { process.kill(currentPid, SIGTERM); }
 				catch (e) {/*ignore*/}
 
-				return PromiseTimers.setTimeout(delay).then(function () {
+				return PromiseTool.setTimeout(self.killTime).then(function () {
 					try { process.kill(currentPid, SIGKILL); }
 					catch (e) {/*ignore*/}
 				});
@@ -294,29 +287,73 @@ Monitor.prototype._destoryWorker = function (pid, delay) {
 	}
 };
 
-Monitor.prototype._replaceWorkers = function () {
+Monitor.prototype._createWorkers = function () {
 	const self = this;
 
-	self.state = ON;
+	if (self.state === OFF) {
+		self.state = ON;
 
-	return Promise.all(self.instances.map(function (instance, index) {
-		// TODO destroy then promise create
-		var worker = self._createWorker();
-		self.workers.splice(index, 1, worker);
-		self.pids.splice(index, 1, worker.process.pid);
-	}));
+		return Promise.all(self.pids.map(function (pid, index) {
+			return self._createWorker().then(function (worker) {
+				self.workers.splice(index, 1, worker);
+				self.pids.splice(index, 1, worker.process.pid);
+			});
+		}));
+	} else {
+		return Promise.resolve();
+	}
 };
 
 Monitor.prototype._destroyWorkers = function () {
 	const self = this;
 
-	self.state = OFF;
+	if (self.state === ON) {
+		self.state = OFF;
 
-	return Promise.all(self.pids.map(function (pid) {
-		return self._destoryWorker(pid, self.killTime);
-	})).then(function () {
-		return PromiseTimers.setTimeout(50);
+		return Promise.all(self.pids.map(function (pid) {
+			return self._destoryWorker(pid);
+		}));
+	} else {
+		return Promise.resolve();
+	}
+};
+
+Monitor.prototype._restartWorkers = function (sleepTime) {
+	const self = this;
+
+	return Promise.resolve().then(function () {
+		if (!sleepTime) return null;
+		self._status(SLEEP);
+		return PromiseTool.setTimeout(sleepTime);
+	}).then(function () {
+		// self.isSleeping = false;
+		return self._destroyWorkers();
+	}).then(function () {
+		return self._createWorkers();
 	});
+};
+
+Monitor.prototype._reloadWorkers = function () {
+	const self = this;
+
+	if (self.state === ON) {
+		return PromiseTool.series(self.pids.map(function (pid, index) {
+			return function () {
+				return Promise.resolve().then(function () {
+					return self._destoryWorker(pid);
+				}).then(function () {
+					return self._createWorker();
+				}).then(function (worker) {
+					self.workers.splice(index, 1, worker);
+					self.pids.splice(index, 1, worker.process.pid);
+				});
+			};
+		}));
+	} else {
+		return Promise.resolve().then(function () {
+			return self._createWorkers();
+		});
+	}
 };
 
 Monitor.prototype._crash = function () {
@@ -329,9 +366,10 @@ Monitor.prototype._crash = function () {
 	self.currentCrashCount = nowDate > delayedCrashDate ? 0 : self.currentCrashCount+1;
 	self.currentSleepTime = self.sleepTime[self.currentCrashCount] || self.sleepTime[self.currentCrashCount.length-1];
 	self.isMaxCrash = self.currentCrashCount > self.maxCrashCount;
+	self.state = self.isMaxCrash ? OFF : self.state;
 
 	self._status(CRASH);
-	self.restart(null, self.currentSleepTime);
+	self._restartWorkers(self.currentSleepTime);
 };
 
 Monitor.prototype._error = function (error) {
@@ -348,20 +386,14 @@ Monitor.prototype._exit = function (code, signal) {
 	else if (self.state === OFF) return null;
 	else self._status(EXIT, code, signal);
 };
-/*
-	updates
-*/
+
 Monitor.prototype._status = function (status, code_error, signal) {
 	const self = this;
 
 	self.status = status;
 	self.emit('status', status, code_error, signal);
 
-	if (status === CREATE) {
-		self.createCount++;
-		self.createDate = Date.now();
-		self.emit('create');
-	} else if (status === START) {
+	if (status === START) {
 		self.startCount++;
 		self.startDate = Date.now();
 		self.emit('start');
@@ -369,6 +401,10 @@ Monitor.prototype._status = function (status, code_error, signal) {
 		self.stopCount++;
 		self.stopDate = Date.now();
 		self.emit('stop');
+	} else if (status === RELOAD) {
+		self.reloadCount++;
+		self.reloadDate = Date.now();
+		self.emit('reload');
 	} else if (status === RESTART) {
 		self.restartCount++;
 		self.restartDate = Date.now();
@@ -384,11 +420,11 @@ Monitor.prototype._status = function (status, code_error, signal) {
 	} else if (status === ERROR) {
 		self.errorCount++;
 		self.errorDate = Date.now();
-		self.emit('error');
+		self.emit('error', code_error);
 	} else if (status === EXIT) {
 		self.exitCount++;
 		self.exitDate = Date.now();
-		self.emit('exit');
+		self.emit('exit', code_error, signal);
 	}
 };
 

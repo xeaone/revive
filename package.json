@@ -27,8 +27,7 @@
   },
   "homepage": "https://github.com/AlexanderElias/revive#readme",
   "dependencies": {
-    "promise-timers": "^1.0.0",
-    "ps-tree": "^1.1.0",
-    "tree-kill": "^1.1.0"
+    "promise-tool": "^1.0.1",
+    "ps-tree": "^1.1.0"
   }
 }
