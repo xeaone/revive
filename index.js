@@ -47,9 +47,10 @@ const Monitor = function (options) {
 	self.cmd = options.cmd || process.execPath;
 	self.env = options.env || {};
 	self.data = options.data || {};
-	
-	self.arg = options.arg === null || options.arg === undefined ? [] : options.arg;
-	self.arg = options.arg.constructor.name === 'String' ? [options.arg] : options.arg;
+
+	self.arg = options.arg;
+	self.arg = self.arg === null || self.arg === undefined ? [] : self.arg;
+	self.arg = self.arg.constructor.name === 'String' ? [self.arg] : self.arg;
 
 	self.createCount = 1;
 	self.startCount = 0;
@@ -77,7 +78,7 @@ const Monitor = function (options) {
 	self.maxCrashCount = options.maxCrashCount || 1000;
 	self.currentCrashCount = 0;
 
-	self.stdio = options.stdio || [
+	self.stdio = [
 		'ignore',
 		(self.stdout) ? Fs.openSync(self.stdout, 'a') : 'pipe',
 		(self.stderr) ? Fs.openSync(self.stderr, 'a') : 'pipe'
