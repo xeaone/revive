@@ -5,6 +5,7 @@ Promise.resolve().then(function (){
 }).then(function () {
 	return Monitor.restart();
 }).then(function () {
+	console.log(Monitor);
 	console.log('Monitor: Started, Restarted');
 }).catch(function (error) {
 	throw error;
