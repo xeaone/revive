@@ -1,6 +1,6 @@
 {
   "name": "revive",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Process Management Tool | Auto Restarts | Advanced Events | And More",
   "main": "index.js",
   "scripts": {

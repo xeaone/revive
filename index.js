@@ -166,7 +166,7 @@ Monitor.prototype.reload = function (callback) {
 	});
 };
 
-Monitor.prototype.json = function () {
+Monitor.prototype.toJSON = function () {
 	const self = this;
 	return {
 		name: self.name,
