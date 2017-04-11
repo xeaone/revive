@@ -328,9 +328,10 @@ Monitor.prototype._restartWorkers = function (sleepTime) {
 	const self = this;
 
 	return Promise.resolve().then(function () {
-		if (!sleepTime) return null;
-		self._status(SLEEP);
-		return PromiseTool.setTimeout(sleepTime);
+		if (sleepTime !== null && sleepTime !== undefined) {
+			self._status(SLEEP);
+			return PromiseTool.setTimeout(sleepTime);
+		}
 	}).then(function () {
 		// self.isSleeping = false;
 		return self._destroyWorkers();
