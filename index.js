@@ -219,6 +219,9 @@ Monitor.prototype.toJSON = function () {
 	};
 };
 
+// backwards compat
+Monitor.prototype.json = Monitor.prototype.toJSON;
+
 Monitor.prototype._createWorker = function () {
 	const self = this;
 
