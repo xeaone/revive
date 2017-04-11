@@ -47,31 +47,31 @@ monitor.start();
 
 
 ## Options ##
-- `name: String`          Defaults to `null` the name of the process.
+- `name: String`                Defaults to `null` the name of the process.
 
-- `arg: Array`            Defaults to `null` arguments or node script.
+- `arg: Array, String`                  Defaults to `null` arguments or node script.
 
-- `cwd: String`           Defaults to `process.cwd()` the current working directory.
+- `cwd: String`                 Defaults to `process.cwd()` the current working directory.
 
-- `cmd: String`           Defaults to `process.execPath` the systems absolute executable/node path.
+- `cmd: String`                 Defaults to `process.execPath` the systems absolute executable/node path.
 
-- `cluster: Boolean`      Defaults to `false`.
+- `cluster: Boolean`            Defaults to `false`.
 
-- `instances: Number`     Defaults to `Os.cpus().length`
+- `instances: Number`           Defaults to `Os.cpus().length` if cluster is set to `true`
 
-- `stdout: String`        Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
+- `stdout: String`              Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
 
-- `stderr: String`        Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
+- `stderr: String`              Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
 
-- `sleepTime:Array`       Defaults to `[1000]` in milliseconds to sleep between start after a crash.
+- `sleepTime: Array, Number`    Defaults to `1000` in milliseconds to sleep between start after a crash.
 
-- `crashTime: Number`     Defaults to `60000`ms. The time until the `maxCrashCount` resets. So if `1000` crashes happen in `60`s then the process will exit.
+- `crashTime: Number`           Defaults to `60000`ms. The time until the `maxCrashCount` resets. So if `1000` crashes happen in `60`s then the process will exit.
 
-- `maxCrashCount: Number` Defaults to `1000` crashes. A crash is triggered and the process exited at `nth + 1`.
+- `maxCrashCount: Number`       Defaults to `1000` crashes. A crash is triggered and the process exited at `nth + 1`.
 
-- `env: {}`               Environment variables for the process.
+- `env: {}`                     Environment variables for the process.
 
-- `data: {}`              A custom object for you.
+- `data: {}`                    A custom object for you.
 
 
 ## API ##
@@ -81,10 +81,12 @@ monitor.start();
 
 - `monitor.restart()` Restarts the monitor by stopping then starting (process must be started).
 
-- `monitor.json()` Creates a stringyifiable object. The object returns stats and data about the process.
+- `monitor.toJSON()` Creates a stringyifiable object. The object returns stats and data about the process.
 
 
 ## Cluster Events ##
+- `monitor.on('status', callback)` 
+
 - `monitor.on('start', callback)` Starts the process. Warning async so process may not be available immediately.
 
 - `monitor.on('stop', callback)`  The process and it's tree is sent a `SIGTERM` signal. If the process does not terminate after ten seconds then the process is sent a `SIGKILL` signal.

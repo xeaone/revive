@@ -28,6 +28,7 @@ const Monitor = function (options) {
 
 	Events.EventEmitter.call(self);
 
+	self.id = options.id;
 	self.name = options.name;
 	self.state = OFF;
 	self.status = CREATE;
@@ -73,7 +74,11 @@ const Monitor = function (options) {
 	self.exitDate = null;
 
 	self.killTime = options.killTime || 1000;
-	self.sleepTime = options.sleepTime || 1000;
+
+	self.sleepTime = options.sleepTime;
+	self.sleepTime = self.sleepTime === null || self.sleepTime === undefined ? [1000] : self.sleepTime;
+	self.sleepTime = self.sleepTime.constructor.name !== 'Array' ? [self.sleepTime] : self.sleepTime;
+
 	self.crashTime = options.crashTime || 60 * 1000;
 	self.maxCrashCount = options.maxCrashCount || 1000;
 	self.currentCrashCount = 0;
@@ -169,6 +174,7 @@ Monitor.prototype.reload = function (callback) {
 Monitor.prototype.toJSON = function () {
 	const self = this;
 	return {
+		id: self.id,
 		name: self.name,
 		state: self.state,
 		status: self.status,
@@ -213,6 +219,7 @@ Monitor.prototype.toJSON = function () {
 		crashTime: self.crashTime,
 		maxCrashCount: self.maxCrashCount,
 		currentCrashCount: self.currentCrashCount,
+		currentSleepTime: self.currentSleepTime,
 
 		data: self.data,
 		env: self.env

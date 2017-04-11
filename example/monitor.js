@@ -8,14 +8,14 @@ const monitor = Revive({
 	cwd: __dirname,
 
 	env: {
-		PORT: 8000,
+		PORT: 3000,
 		PREVENT_SIGTERM: false
 	},
 
 	cluster: true,
 	instances: 2,
 
-	sleepTime: [3000],
+	sleepTime: 1000,
 	killTime: 1000,
 	// crashTime: 4000,
 
