@@ -43,11 +43,13 @@ const Monitor = function (options) {
 
 	self.gid = options.gid;
 	self.uid = options.uid;
-	self.arg = options.arg || [];
 	self.cwd = options.cwd || process.cwd();
 	self.cmd = options.cmd || process.execPath;
 	self.env = options.env || {};
 	self.data = options.data || {};
+	
+	self.arg = options.arg === null || options.arg === undefined ? [] : options.arg;
+	self.arg = options.arg.constructor.name === 'String' ? [options.arg] : options.arg;
 
 	self.createCount = 1;
 	self.startCount = 0;
