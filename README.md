@@ -1,5 +1,4 @@
 **Process Management Tool | Auto Restarts | Advanced Events | And More**
-**Warning 1.1.1 Breaking API Changes**
 
 
 # Revive
