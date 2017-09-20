@@ -48,7 +48,7 @@ monitor.start();
 ## Options ##
 - `name: String`                Defaults to `null` the name of the process.
 
-- `arg: Array, String`                  Defaults to `null` arguments or node script.
+- `arg: Array, String`          Defaults to `null` arguments or node script.
 
 - `cwd: String`                 Defaults to `process.cwd()` the current working directory.
 
@@ -56,7 +56,7 @@ monitor.start();
 
 - `cluster: Boolean`            Defaults to `false`.
 
-- `instances: Number`           Defaults to `Os.cpus().length` if cluster is set to `true`
+- `instances: Number`           Defaults to `os.cpus().length` if cluster is set to `true`
 
 - `stdout: String`              Defaults to `'pipe'` otherwise a file path. If a path is provided than this event will not fire.
 
