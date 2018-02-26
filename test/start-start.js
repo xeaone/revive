@@ -1,11 +1,11 @@
-const Monitor = require('../monitor');
+const Monitor = require('./monitor');
 
 Promise.resolve().then(function (){
 	return Monitor.start();
 }).then(function () {
-	return Monitor.restart();
+	return Monitor.start();
 }).then(function () {
-	console.log('Monitor: Started, Restarted');
+	console.log('Monitor: Started, Started');
 }).catch(function (error) {
-	throw error;
+	console.error(error);
 });

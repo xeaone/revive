@@ -1,6 +1,6 @@
 const http = require('http');
 
-http.createServer(function (request, response) {
+const server = http.createServer(function (request, response) {
 	console.log('Path Hit: ' + request.url);
 
 	if (request.url === '/') {
@@ -10,8 +10,9 @@ http.createServer(function (request, response) {
 	} else {
 		response.end('Path Hit: ' + request.url);
 	}
-}).listen(process.env.PORT, function() {
-	console.log('Server Listening On: http://localhost:' + process.env.PORT);
+}).listen(0, function() {
+	console.log(`Server PID: ${process.pid}`);
+	console.log(`Server Listening On: http://localhost: ${server.address().port}`);
 });
 
 process.on('SIGTERM', function () {

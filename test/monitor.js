@@ -1,7 +1,6 @@
-const Path = require('path');
-const Revive = require(Path.join(__dirname, '../index.js'));
+const Revive = require('../index');
 
-const monitor = Revive({
+const monitor = new Revive({
 	name: 'test',
 
 	arg: ['server.js'],

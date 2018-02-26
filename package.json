@@ -1,33 +1,29 @@
 {
-  "name": "revive",
-  "version": "1.1.8",
-  "description": "Process Management Tool | Auto Restarts | Advanced Events | And More",
-  "main": "index.js",
-  "scripts": {
-    "test": "node example/test.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/AlexanderElias/revive.git"
-  },
-  "keywords": [
-    "revive",
-    "respawn",
-    "monitor",
-    "forever",
-    "pm2",
-    "alive",
-    "keep",
-    "alive"
-  ],
-  "author": "Alexander Steven Elias",
-  "license": "MPL-2.0",
-  "bugs": {
-    "url": "https://github.com/AlexanderElias/revive/issues"
-  },
-  "homepage": "https://github.com/AlexanderElias/revive#readme",
-  "dependencies": {
-    "promise-tool": "^1.0.1",
-    "ps-tree": "^1.1.0"
-  }
+	"name": "revive",
+	"version": "2.0.0",
+	"description": "Process Management Tool | Auto Restarts | Advanced Events | And More",
+	"main": "index.js",
+	"scripts": {
+		"test": "node ./test"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/AlexanderElias/revive.git"
+	},
+	"keywords": [
+		"revive",
+		"respawn",
+		"monitor",
+		"forever",
+		"pm2",
+		"alive",
+		"keep",
+		"alive"
+	],
+	"author": "Alexander Steven Elias",
+	"license": "MPL-2.0",
+	"bugs": {
+		"url": "https://github.com/AlexanderElias/revive/issues"
+	},
+	"homepage": "https://github.com/AlexanderElias/revive#readme"
 }

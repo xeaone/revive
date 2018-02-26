@@ -1,9 +1,9 @@
-const Monitor = require('../monitor');
+const Monitor = require('./monitor');
 
 Promise.resolve().then(function (){
 	return Monitor.start();
 }).then(function () {
 	console.log('Monitor: Started');
 }).catch(function (error) {
-	throw error;
+	console.error(error);
 });
