@@ -3,12 +3,11 @@ const Revive = require('../index');
 const monitor = new Revive({
 	name: 'test',
 
-	arg: ['server.js'],
+	arg: [__dirname + '/server.js'],
 	cwd: __dirname,
 
 	env: {
-		PORT: 3000,
-		PREVENT_SIGTERM: false
+		PORT: 3000
 	},
 
 	cluster: true,

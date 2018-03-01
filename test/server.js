@@ -10,7 +10,7 @@ const server = http.createServer(function (request, response) {
 	} else {
 		response.end('Path Hit: ' + request.url);
 	}
-}).listen(0, function() {
+}).listen(process.env.PORT || 0, function() {
 	console.log(`Server PID: ${process.pid}`);
 	console.log(`Server Listening On: http://localhost: ${server.address().port}`);
 });

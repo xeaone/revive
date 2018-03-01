@@ -12,12 +12,15 @@ const Kill = require('./lib/kill');
 
 const CUPS = Os.cpus().length;
 
+// signal
 const SIGKILL = 'SIGKILL';
 const SIGTERM = 'SIGTERM';
 
+// state
 const ON = 'ON';
 const OFF = 'OFF';
 
+// status
 const EXIT = 'EXIT';
 const STOP = 'STOP';
 const START = 'START';
@@ -33,18 +36,15 @@ module.exports = class Monitor extends Events {
 	constructor (options) {
 		super();
 
-		this.json = toJSON;
-
-		this.id = options.id;
-		this.name = options.name;
 		this.state = OFF;
 		this.status = CREATE;
+		this.id = options.id;
+		this.name = options.name;
 
 		this.cluster = options.cluster || false;
 		this.instances = options.cluster === true ? options.instances || CUPS : 1;
 
-		this.pids = Array(this.instances).fill(0);
-		this.workers = [];
+		this.workers = Array(this.instances).fill(null);
 
 		this.stdout = options.stdout;
 		this.stderr = options.stderr;
@@ -80,7 +80,7 @@ module.exports = class Monitor extends Events {
 		this.errorDate = null;
 		this.exitDate = null;
 
-		this.killTime = options.killTime || 1000;
+		// this.killTime = this.killTime === null || this.killTime === undefined ? 1000 : this.killTime;
 
 		this.sleepTime = options.sleepTime;
 		this.sleepTime = this.sleepTime === null || this.sleepTime === undefined ? [1000] : this.sleepTime;
@@ -90,6 +90,8 @@ module.exports = class Monitor extends Events {
 		this.maxCrashCount = options.maxCrashCount || 1000;
 		this.currentCrashCount = 0;
 
+		this.json = this.toJSON;
+
 		this.stdio = [
 			'ignore',
 			(this.stdout) ? Fs.openSync(this.stdout, 'a') : 'pipe',
@@ -97,7 +99,7 @@ module.exports = class Monitor extends Events {
 		];
 
 		if (this.cluster) {
-			var settings = {};
+			let settings = {};
 
 			process.cwd(this.cwd);
 
@@ -115,7 +117,9 @@ module.exports = class Monitor extends Events {
 			settings.exec = this.arg[0];
 			settings.args = this.arg.slice(1);
 
-			if (settings.stdio[settings.stdio.length-1] !== 'ipc') settings.stdio.push('ipc');
+			if (settings.stdio[settings.stdio.length-1] !== 'ipc') {
+				settings.stdio.push('ipc');
+			}
 
 			Cluster.setupMaster(settings);
 		}
@@ -141,6 +145,184 @@ module.exports = class Monitor extends Events {
 		await this._reloadWorkers();
 		this._status(RELOAD);
 	};
+
+	async _createWorker (index) {
+
+		let worker;
+		let env = Object.assign({}, this.env);
+
+		if (this.cluster && Cluster.isMaster) {
+			worker = Cluster.fork(env).process;
+		} else {
+			worker = Cp.spawn(this.cmd, this.arg, {
+				env: env,
+				cwd: this.cwd,
+				uid: this.uid,
+				gid: this.gid,
+				stdio: this.stdio
+			});
+		}
+
+		if (worker.stdout) {
+			worker.stdout.on('data', function (data) {
+				this.emit('stdout', data.toString());
+			}.bind(this));
+		}
+
+		if (worker.stderr) {
+			worker.stderr.on('data', function (data) {
+				this.emit('stderr', data.toString());
+			}.bind(this));
+		}
+
+		worker.on('error', function (error) {
+			this._error(error);
+		}.bind(this));
+
+		worker.on('exit', function (code, signal) {
+			this._exit(code, signal);
+		}.bind(this));
+
+		this.workers.splice(index, 1, worker);
+
+		return worker;
+	}
+
+	async _destoryWorker (index) {
+		const worker = this.workers.splice(index, 1, null)[0];
+
+		if (!worker) return;
+
+		const pid = worker.pid;
+		const childPids = await Pids(pid);
+
+		const exited = function () {
+			return new Promise(function (resolve) {
+				worker.on('error',  resolve);
+				worker.on('exit', resolve);
+			});
+		}
+
+		for (let childPid of childPids) {
+			await Kill(childPid, SIGKILL);
+		}
+
+		// await Kill(pid, SIGTERM);
+		// await Timeout(this.killTime);
+		await Kill(pid, SIGKILL);
+		await exited();
+
+		return worker;
+	}
+
+	async _createWorkers () {
+		for (let i = 0, l = this.instances; i < l; i++) {
+			await this._createWorker(i);
+		}
+	}
+
+	async _destroyWorkers () {
+		for (let i = 0, l = this.instances; i < l; i++) {
+			await this._destoryWorker(i);
+		}
+	}
+
+	async _restartWorkers (sleepTime) {
+		this.state = OFF;
+
+		if (sleepTime !== null && sleepTime !== undefined) {
+			this._status(SLEEP);
+			await Timeout(sleepTime);
+		}
+
+		await this._destroyWorkers();
+		await this._createWorkers();
+
+		this.state = ON;
+	}
+
+	async _reloadWorkers () {
+		this.state = OFF;
+
+		for (let i = 0, l = this.instances; i < l; i++) {
+			await this._destoryWorker(i);
+			await this._createWorker(i);
+		}
+
+		this.state = ON;
+	}
+
+	async _crash () {
+		const nowDate = Date.now();
+		const lastCrashDate = this.crashDate || nowDate;
+		const delayedCrashDate = lastCrashDate + this.crashTime;
+
+		this.currentCrashCount = nowDate > delayedCrashDate ? 0 : this.currentCrashCount+1;
+		this.currentSleepTime = this.sleepTime[this.currentCrashCount] || this.sleepTime[this.currentCrashCount.length-1];
+		this.isMaxCrash = this.currentCrashCount > this.maxCrashCount;
+		this.state = this.isMaxCrash ? OFF : this.state;
+
+		this._status(CRASH);
+		await this._restartWorkers(this.currentSleepTime);
+	};
+
+	async _error (error) {
+		this._status(ERROR, error);
+		await this._destroyWorkers();
+	}
+
+	async _exit (code, signal) {
+		if (this.isMaxCrash) {
+			await this._destroyWorkers();
+		} else if (this.state === OFF) {
+			return;
+		} else if (this.state === ON) {
+			await this._crash();
+		} else {
+			this._status(EXIT, code, signal);
+		}
+	}
+
+	_status (status, code_error, signal) {
+
+		this.status = status;
+		this.emit('status', status, code_error, signal);
+
+		if (status === START) {
+			this.startCount++;
+			this.startDate = Date.now();
+			this.emit('start');
+		} else if (status === STOP) {
+			this.stopCount++;
+			this.stopDate = Date.now();
+			this.emit('stop');
+		} else if (status === RELOAD) {
+			this.reloadCount++;
+			this.reloadDate = Date.now();
+			this.emit('reload');
+		} else if (status === RESTART) {
+			this.restartCount++;
+			this.restartDate = Date.now();
+			this.emit('restart');
+		} else if (status === SLEEP) {
+			this.sleepCount++;
+			this.sleepDate = Date.now();
+			this.emit('sleep');
+		} else if (status === CRASH) {
+			this.crashCount++;
+			this.crashDate = Date.now();
+			this.emit('crash');
+		} else if (status === ERROR) {
+			this.errorCount++;
+			this.errorDate = Date.now();
+			this.emit('error', code_error);
+		} else if (status === EXIT) {
+			this.exitCount++;
+			this.exitDate = Date.now();
+			this.emit('exit', code_error, signal);
+		}
+
+	}
 
 	toJSON () {
 		return {
@@ -194,193 +376,6 @@ module.exports = class Monitor extends Events {
 			data: this.data,
 			env: this.env
 		};
-	}
-
-	async _createWorker (index) {
-		const self = this;
-
-		let worker;
-		let env = Object.assign({}, process.env, self.env);
-
-		if (self.cluster && Cluster.isMaster) {
-			worker = Cluster.fork(env);
-		} else {
-			worker = {
-				process:
-					Cp.spawn(self.cmd, self.arg, {
-						env: env,
-						cwd: self.cwd,
-						uid: self.uid,
-						gid: self.gid,
-						stdio: self.stdio
-					})
-			};
-		}
-
-		if (worker.process.stdout) {
-			worker.process.stdout.on('data', function (data) {
-				self.emit('stdout', data.toString());
-			});
-		}
-
-		if (worker.process.stderr) {
-			worker.process.stderr.on('data', function (data) {
-				self.emit('stderr', data.toString());
-			});
-		}
-
-		worker.process.on('error', function (error) {
-			self._error(error);
-		});
-
-		worker.process.on('exit', function (code, signal) {
-			self._exit(code, signal, this.pid);
-		});
-
-
-		// NOTE from _createWorkers
-		if (typeof index === 'number') {
-			self.workers.splice(index, 1, worker);
-			self.pids.splice(index, 1, worker.process.pid);
-		}
-
-		return worker;
-	}
-
-	async _destoryWorker (pid) {
-		const pids = await Pids(pid);
-
-		for (let currentPid of pids) {
-			await Kill(currentPid, SIGTERM);
-			await Timeout(this.killTime);
-			await Kill(currentPid, SIGKILL);
-		}
-		
-	}
-
-	async _createWorkers () {
-		const self = this;
-
-		if (self.state === OFF) {
-			self.state = ON;
-
-			await Promise.all(self.pids.map(function (pid, index) {
-				return self._createWorker(index);
-			}));
-
-		}
-	}
-
-	async _destroyWorkers () {
-		const self = this;
-
-		if (self.state === ON) {
-			self.state = OFF;
-
-			await Promise.all(self.pids.map(function (pid, index) {
-				return self._destoryWorker(pid, index);
-			}));
-
-		}
-	}
-
-	async _restartWorkers (sleepTime) {
-
-		if (sleepTime !== null && sleepTime !== undefined) {
-			this._status(SLEEP);
-			await Timeout(sleepTime);
-		}
-
-		// this.isSleeping = false;
-		await this._destroyWorkers();
-		await this._createWorkers();
-	}
-
-	async _reloadWorkers () {
-		if (this.state === ON) {
-
-			for (let i = 0, l = this.pids.length; i < l; i++) {
-				let pid = this.pids[i];
-				await this._destoryWorker(pid);
-				let worker = await this._createWorker();
-				this.workers.splice(i, 1, worker);
-				this.pids.splice(i, 1, worker.process.pid);
-			}
-
-		} else {
-			await this._createWorkers();
-		}
-	}
-
-	async _crash () {
-		const nowDate = Date.now();
-		const lastCrashDate = this.crashDate || nowDate;
-		const delayedCrashDate = lastCrashDate + this.crashTime;
-
-		this.currentCrashCount = nowDate > delayedCrashDate ? 0 : this.currentCrashCount+1;
-		this.currentSleepTime = this.sleepTime[this.currentCrashCount] || this.sleepTime[this.currentCrashCount.length-1];
-		this.isMaxCrash = this.currentCrashCount > this.maxCrashCount;
-		this.state = this.isMaxCrash ? OFF : this.state;
-
-		this._status(CRASH);
-		await this._restartWorkers(this.currentSleepTime);
-	};
-
-	async _error (error) {
-		this._status(ERROR, error);
-		await this._destroyWorkers();
-	}
-
-	async _exit (code, signal) {
-		if (this.isMaxCrash) {
-			await this._destroyWorkers();
-		} else if (this.state === ON) {
-			await this._crash();
-		} else if (this.state === OFF) {
-			return null;
-		} else {
-			this._status(EXIT, code, signal);
-		}
-	}
-
-	_status (status, code_error, signal) {
-
-		this.status = status;
-		this.emit('status', status, code_error, signal);
-
-		if (status === START) {
-			this.startCount++;
-			this.startDate = Date.now();
-			this.emit('start');
-		} else if (status === STOP) {
-			this.stopCount++;
-			this.stopDate = Date.now();
-			this.emit('stop');
-		} else if (status === RELOAD) {
-			this.reloadCount++;
-			this.reloadDate = Date.now();
-			this.emit('reload');
-		} else if (status === RESTART) {
-			this.restartCount++;
-			this.restartDate = Date.now();
-			this.emit('restart');
-		} else if (status === SLEEP) {
-			this.sleepCount++;
-			this.sleepDate = Date.now();
-			this.emit('sleep');
-		} else if (status === CRASH) {
-			this.crashCount++;
-			this.crashDate = Date.now();
-			this.emit('crash');
-		} else if (status === ERROR) {
-			this.errorCount++;
-			this.errorDate = Date.now();
-			this.emit('error', code_error);
-		} else if (status === EXIT) {
-			this.exitCount++;
-			this.exitDate = Date.now();
-			this.emit('exit', code_error, signal);
-		}
 	}
 
 }

@@ -77,12 +77,10 @@ All methods execept toJson are async.
 	- `Code` The numeric exit code
 	- `Signal` The string signal
 
-
 ## Instance Events
 - `monitor.on('reload', callback)` Zero downtime restart if `cluster` is set to `true` and `instances` is greater than one.
 - `monitor.on('sleep', callback)` Triggered when process crashes and enters sleep.
 - `monitor.on('crash', callback)` Triggered when the process crashes.
-
 
 ## Issues
 Immediate `start` then `stop` execution does not send the signals. This could be a problem with node.js.
